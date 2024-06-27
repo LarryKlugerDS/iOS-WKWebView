@@ -81,6 +81,7 @@ class ViewController: UIViewController {
             
             webView.uiDelegate = self
             webView.navigationDelegate = self
+            webView.isInspectable = true
             
             //ATTENTION: ACTION REQUIRED (3/5): Choose if your want to allow users to use pinch to zoom gesture and double tap to zoom in webview
             //By default, WKWebView allows users to use pinch to zoom gesture and double tap to zoom in webview
