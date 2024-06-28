@@ -7,10 +7,21 @@
 import UIKit
 import WebKit
 
+extension ViewController: WKScriptMessageHandler {
+    func userContentController(_ userContentController: WKUserContentController,
+                               didReceive message: WKScriptMessage) {
+        if message.name == "myHandler" {
+            // Handle the message data
+            let data = message.body
+            // process the data
+            print("LOG: \(data)")
+        }
+    }
+}
+
 class ViewController: UIViewController {
     
     private let webView = WKWebView(frame: .zero)
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -81,6 +92,11 @@ class ViewController: UIViewController {
             
             webView.uiDelegate = self
             webView.navigationDelegate = self
+            webView.isInspectable = true
+            webView.configuration.userContentController.add(self, name: "myHandler")
+            // inject JS into the WKWebView's HTML
+            let helloWorldScript = "window.webkit.messageHandlers.myHandler/postMessage('Hello World!');"
+            webView.evaluateJavaScript(helloWorldScript, completionHandler: nil)
             
             //ATTENTION: ACTION REQUIRED (3/5): Choose if your want to allow users to use pinch to zoom gesture and double tap to zoom in webview
             //By default, WKWebView allows users to use pinch to zoom gesture and double tap to zoom in webview
