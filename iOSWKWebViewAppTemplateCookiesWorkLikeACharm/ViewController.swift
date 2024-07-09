@@ -86,12 +86,12 @@ class ViewController: UIViewController {
         //So keep in mind that your remote website should look and feel like iOS app (as much as possible),
         //especially if you are planning to distribute it via App Store and expect to successfully pass Apple's App Review
         
-        if let url = URL(string: "https://docusign.github.io/app-examples/embedded-signing/") {
+        if let url = URL(string: "http://localhost/docusign.github.io/app-examples/embedded-signing/") {
             let request = URLRequest(url: url)
             webView.load(request)
             
-            webView.uiDelegate = self
-            webView.navigationDelegate = self
+            //webView.uiDelegate = self
+            //webView.navigationDelegate = self
             webView.isInspectable = true
             webView.configuration.userContentController.add(self, name: "myHandler")
             // inject JS into the WKWebView's HTML
@@ -188,74 +188,77 @@ class ViewController: UIViewController {
     
 }
 
+//
+// Docusign: cookie storage is not needed for Focused View or other embedded signing options
+//
 //Solution credit Stackoverflow user Moussa Ndour https://stackoverflow.com/users/6275180/moussa-ndour
 //From his answer here (link below)
 //https://stackoverflow.com/questions/39772007/wkwebview-persistent-storage-of-cookies/53512299#53512299
 //
 //(No modifications needed below)
 
-extension WKWebView {
-    
-    enum PrefKey {
-        static let cookie = "cookies"
-    }
-    
-    func writeDiskCookies(for domain: String, completion: @escaping () -> ()) {
-        fetchInMemoryCookies(for: domain) { data in
-            print("write data", data)
-            UserDefaults.standard.setValue(data, forKey: PrefKey.cookie + domain)
-            completion();
-        }
-    }
-    
-    
-    func loadDiskCookies(for domain: String, completion: @escaping () -> ()) {
-        if let diskCookie = UserDefaults.standard.dictionary(forKey: (PrefKey.cookie + domain)){
-            fetchInMemoryCookies(for: domain) { freshCookie in
-                
-                let mergedCookie = diskCookie.merging(freshCookie) { (_, new) in new }
-                
-                for (cookieName, cookieConfig) in mergedCookie {
-                    let cookie = cookieConfig as! Dictionary<String, Any>
-                    
-                    var expire : Any? = nil
-                    
-                    if let expireTime = cookie["Expires"] as? Double{
-                        expire = Date(timeIntervalSinceNow: expireTime)
-                    }
-                    
-                    let newCookie = HTTPCookie(properties: [
-                        .domain: cookie["Domain"] as Any,
-                        .path: cookie["Path"] as Any,
-                        .name: cookie["Name"] as Any,
-                        .value: cookie["Value"] as Any,
-                        .secure: cookie["Secure"] as Any,
-                        .expires: expire as Any
-                    ])
-                    
-                    self.configuration.websiteDataStore.httpCookieStore.setCookie(newCookie!)
-                }
-                
-                completion()
-            }
-            
-        }
-        else{
-            completion()
-        }
-    }
-    
-    func fetchInMemoryCookies(for domain: String, completion: @escaping ([String: Any]) -> ()) {
-        var cookieDict = [String: AnyObject]()
-        WKWebsiteDataStore.default().httpCookieStore.getAllCookies { (cookies) in
-            for cookie in cookies {
-                if cookie.domain.contains(domain) {
-                    cookieDict[cookie.name] = cookie.properties as AnyObject?
-                }
-            }
-            completion(cookieDict)
-        }
-    }}
+//extension WKWebView {
+//    
+//    enum PrefKey {
+//        static let cookie = "cookies"
+//    }
+//    
+//    func writeDiskCookies(for domain: String, completion: @escaping () -> ()) {
+//        fetchInMemoryCookies(for: domain) { data in
+//            print("write data", data)
+//            UserDefaults.standard.setValue(data, forKey: PrefKey.cookie + domain)
+//            completion();
+//        }
+//    }
+//    
+//    
+//    func loadDiskCookies(for domain: String, completion: @escaping () -> ()) {
+//        if let diskCookie = UserDefaults.standard.dictionary(forKey: (PrefKey.cookie + domain)){
+//            fetchInMemoryCookies(for: domain) { freshCookie in
+//                
+//                let mergedCookie = diskCookie.merging(freshCookie) { (_, new) in new }
+//                
+//                for (cookieName, cookieConfig) in mergedCookie {
+//                    let cookie = cookieConfig as! Dictionary<String, Any>
+//                    
+//                    var expire : Any? = nil
+//                    
+//                    if let expireTime = cookie["Expires"] as? Double{
+//                        expire = Date(timeIntervalSinceNow: expireTime)
+//                    }
+//                    
+//                    let newCookie = HTTPCookie(properties: [
+//                        .domain: cookie["Domain"] as Any,
+//                        .path: cookie["Path"] as Any,
+//                        .name: cookie["Name"] as Any,
+//                        .value: cookie["Value"] as Any,
+//                        .secure: cookie["Secure"] as Any,
+//                        .expires: expire as Any
+//                    ])
+//                    
+//                    self.configuration.websiteDataStore.httpCookieStore.setCookie(newCookie!)
+//                }
+//                
+//                completion()
+//            }
+//            
+//        }
+//        else{
+//            completion()
+//        }
+//    }
+//    
+//    func fetchInMemoryCookies(for domain: String, completion: @escaping ([String: Any]) -> ()) {
+//        var cookieDict = [String: AnyObject]()
+//        WKWebsiteDataStore.default().httpCookieStore.getAllCookies { (cookies) in
+//            for cookie in cookies {
+//                if cookie.domain.contains(domain) {
+//                    cookieDict[cookie.name] = cookie.properties as AnyObject?
+//                }
+//            }
+//            completion(cookieDict)
+//        }
+//    }}
 
 //ATTENTION: ACTION REQUIRED (5/5): Put your remote website URL here
 //
@@ -265,18 +268,18 @@ extension WKWebView {
 
 let url = URL(string: "https://google.com")!
 
-extension ViewController: WKUIDelegate, WKNavigationDelegate {
-    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        //load cookie of current domain
-        webView.loadDiskCookies(for: url.host!){
-            decisionHandler(.allow)
-        }
-    }
-    
-    public func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
-        //write cookie for current domain
-        webView.writeDiskCookies(for: url.host!){
-            decisionHandler(.allow)
-        }
-    }
-}
+//extension ViewController: WKUIDelegate, WKNavigationDelegate {
+//    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+//        //load cookie of current domain
+//        webView.loadDiskCookies(for: url.host!){
+//            decisionHandler(.allow)
+//        }
+//    }
+//    
+//    public func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+//        //write cookie for current domain
+//        webView.writeDiskCookies(for: url.host!){
+//            decisionHandler(.allow)
+//        }
+//    }
+//}
